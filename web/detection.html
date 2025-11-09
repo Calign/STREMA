@@ -1,0 +1,71 @@
+ <!--detecion.html--> 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STREMA</title>
+    <link rel="stylesheet" href="styles/detection.css">
+    <link rel="stylesheet" href="styles/general.css">
+    <link rel="icon" href="assets/logo.png" type="image/png">
+    <script src="/eel.js"></script>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <h3 class="logo">STREMA</h3>
+        <div class="nav-section">
+            <p class="nav-item" onclick="navigateWithSlide('home.html', 'left')">Home</p>
+            <p class="nav-item" onclick="navigateWithSlide('recommendation.html', 'left')">Recommendations</p>
+            <p class="nav-item" onclick="navigateWithSlide('history.html', 'left')">History</p>
+            <p class="nav-item" onclick="navigateWithSlide('settings.html', 'left')">Settings</p>
+        </div>
+        <div class="username-container">
+            <img class="user-icon" src="assets/user_icon.png" alt="User">
+            <span class="username" id="usernameDisplay">Username</span>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1 class="hero-title">Detection</h1>
+        <p class="hero-text">System records for a short duration and computes your stress level using facial expressions and heart rate.</p>
+    </div>
+
+    <!-- Detection Box -->
+    <div class="detection-box">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="overlayCanvas"></canvas>
+        <!-- Scan line overlay -->
+        <div class="scan-line"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-container">
+        <div class="detection-mode-container">
+            <label for="detection-mode">Select Detection Mode:</label>
+            <select id="detection-mode">
+                <option value="both" selected>Facial + Heart Rate</option>
+                <option value="facial">Facial Only</option>
+                <option value="heart">Heart Rate Only</option>
+            </select>
+        </div>
+
+        <div class="controls-center">
+            <button id="startBtn" class="click-start">Start Detection</button>
+            <button id="cancelBtn" class="click-start" style="display:none;">Cancel</button>
+        </div>
+
+        <div class="controls-right">
+            <div>Timer: <span id="timerDisplay">00:00</span></div>
+        </div>
+    </div>
+
+    <!-- Heart Rate Display -->
+    <div class="hr-log-container">
+        <h4>Current Heart Rate</h4>
+        <div id="currentHR" class="hr-box">--</div>
+    </div>
+
+    <hr class="divider">
+    <script src="script.js"></script>
+</body>
+</html>

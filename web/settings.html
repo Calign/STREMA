@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STREMA</title>
+    <link rel="stylesheet" href="styles/settings.css">
+    <link rel="stylesheet" href="styles/general.css">
+    <link rel="icon" href="assets/logo.png" type="image/png">
+    <script src="/eel.js"></script>
+    
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <h3 class="logo">STREMA</h3>
+        <div class="nav-section">
+            <a href="home.html" class="nav-item">Home</a>
+            <a href="recommendation.html" class="nav-item">Recommendations</a>
+            <a href="history.html" class="nav-item">History</a>
+            <a href="settings.html" class="nav-item active">Settings</a>
+        </div>
+        <div class="username-container">
+            <img class="user-icon" src="assets/user_icon.png" alt="User">
+            <span class="username" id="usernameDisplay">Username</span>
+        </div>
+    </div>
+
+     <!-- Hero Section -->
+    <div class="hero-settings">
+        <h1 class="hero-title">Settings</h1>
+    </div>
+
+    <div class="settings">
+        <div class="contents">
+            <img class="settings-icon" src="assets/user.png">
+            <p>Account</p>
+        </div>
+        <div class="contents">
+            <img class="settings-icon" src="assets/preferences.png">
+            <p>Preferences</p>
+        </div>
+        <div class="contents">
+            <img class="settings-icon" src="assets/smartwatch.png">
+            <p>Wearables</p>
+        </div>
+        <div class="contents">
+            <img class="settings-icon" src="assets/about.png">
+            <p>About</p>
+        </div>
+        <div class="contents" onclick="logoutUser()">
+            <img class="settings-icon" src="assets/off.png">
+            <p>Logout</p>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation -->
+    <div id="logoutModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Confirm Logout</h3>
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeLogoutModal()">Cancel</button>
+                <button class="confirm-btn" onclick="confirmLogout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>

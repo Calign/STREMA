@@ -1,0 +1,189 @@
+/* ===================== Music Section ===================== */
+.music-section {
+    display: flex;
+    gap: 30px;
+    margin-top: 50px;
+    flex-wrap: wrap;
+}
+
+.music-column {
+    flex: 1 1 400px;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.music-column h2 {
+    margin-top: 0;
+    color: #3a86ff;
+    margin-bottom: 15px;
+}
+
+.music-column input[type="text"] {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    width: calc(100% - 90px);
+    font-size: 14px;
+}
+
+.music-column button {
+    padding: 10px 15px;
+    border-radius: 25px;
+    border: none;
+    background-color: #3a86ff;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.music-column button:hover { opacity: 0.85; }
+
+#uploadedList, #playlistContainer {
+    margin-top: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.uploaded-track, .playlist-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    background: #f7f7f7;
+}
+
+.uploaded-track span, .playlist-card span {
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+.uploaded-track button, .playlist-card button {
+    margin-left: 5px;
+    font-size: 14px;
+}
+
+
+
+/* ===================== Cards ===================== */
+.features-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 30px 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    width: 350px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+.card h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Buttons */
+.start-btn, .stop-btn, .nap-btn, #createPlaylistBtn, #addYoutubeBtn {
+    background-color: #3a86ff;
+    color: #fff;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 30px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin: 5px 0;
+}
+
+.stop-btn { background-color: #ef233c; }
+.nap-btn { background-color: #00bfa6; }
+
+/* Breathing Circle */
+.breathing-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #a2d2ff 0%, #3a86ff 80%);
+    margin: 20px auto;
+    transition: all 4s ease-in-out;
+    transform: scale(1);
+}
+
+.breathing-circle.expand { transform: scale(1.5); }
+.breathing-circle.shrink { transform: scale(1); }
+
+.breathing-text { font-size: 20px; font-weight: 500; margin-top: 12px; color: #333; }
+.timer-display { margin-top: 8px; font-size: 18px; color: #555; }
+
+/* Nap Timer */
+.nap-timer { display: flex; flex-direction: column; align-items: center; }
+.nap-time-display { font-size: 40px; font-weight: 700; color: #333; margin-bottom: 20px; }
+
+.hidden { display: none; }
+
+
+
+/* ===================== Exercise Section ===================== */
+.exercise-section {
+    margin-top: 50px;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.exercise-section h2 {
+    color: #3a86ff;
+    margin-bottom: 15px;
+    font-size: 22px;
+}
+
+.exercise-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.exercise-btn {
+    flex: 1 1 150px;
+    padding: 10px 15px;
+    background-color: #00bfa6;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.exercise-btn:hover {
+    opacity: 0.85;
+}
+
+#exercisePlayerContainer {
+    margin-top: 15px;
+    width: 100%;
+    max-height: 300px;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}

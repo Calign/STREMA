@@ -1,0 +1,73 @@
+<!-- home.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>STREMA</title> <!-- keep this static across all pages -->
+  <link rel="stylesheet" href="styles/home.css">
+  <link rel="stylesheet" href="styles/general.css">
+  <script src="/eel.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Favicon / Taskbar Icon -->
+  <link rel="icon" href="assets/logo.png" type="image/png">
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <div class="navbar">
+    <h3 class="logo">STREMA</h3>
+    <div class="nav-section">
+      <p class="nav-item active" onclick="navigateWithSlide('home.html')">Home</p>
+      <p class="nav-item" onclick="navigateWithSlide('recommendation.html', 'left')">Recommendations</p>
+      <p class="nav-item" onclick="navigateWithSlide('history.html', 'left')">History</p>
+      <p class="nav-item" onclick="navigateWithSlide('settings.html', 'left')">Settings</p>
+    </div>
+    <div class="username-container">
+      <img class="user-icon" src="assets/user_icon.png" alt="User">
+      <span class="username" id="usernameDisplay">Username</span>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="hero">
+    <h1 class="hero-title">Welcome!</h1>
+    <p class="hero-text">A wellness app that helps detect stress and guides you with calming recommendations.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Start Detection -->
+  <div class="start-detection-container">
+    <button class="start-btn" onclick="navigateWithSlide('detection.html', 'right')">Start Detection</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Top Section -->
+    <div class="top-section">
+    <div class="stress-level">
+        <h3>Recent Stress Level (1–10)</h3>
+        <div class="box" id="recentStressBox">
+            <span id="recentStressText">Loading...</span>
+            <img id="stressSprite" src="" alt="Stress Sprite" style="margin-top: 15px; max-height: 100px;">
+        </div>
+    </div>
+    <div class="graph">
+        <h3>Stress Trend (Last 5 Sessions)</h3>
+        <div class="box">
+        <canvas id="homeStressChart"></canvas>
+        </div>
+    </div>
+    </div>
+
+
+  <script src="script.js"></script>
+</body>
+</html>

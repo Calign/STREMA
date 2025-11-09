@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STREMA</title>
+    <script src="/eel.js"></script>
+    <link rel="stylesheet" href="styles/login.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="assets/logo.png" type="image/png">
+</head>
+<body>
+    <div class="background">
+        <div class="login-container">
+            <p class="login-text">Login</p> 
+            <div class="input-box">
+                <div class="icon-user">
+                    <img class="user-icon" src="assets/user_icon.png" alt="User icon">
+                    <input id="username" class="username-input" type="text" placeholder="Enter Username">
+                </div>
+                <div class="icon-pw">
+                    <img class="lock-icon" src="assets/lock_icon.png" alt="Lock icon">
+                    <input id="password" class="password-input" type="password" placeholder="Enter your Password">
+                </div>
+            </div>
+            <div class="login-btn-div">
+                <button onclick="login()" class="login-btn">Login</button>
+            </div>
+            <p id="result"></p>
+            <div class="create-acc">
+                <p class="sign-up">
+                    Don’t have an account? 
+                    <a href="#" onclick="navigateWithSlide('signup.html', 'left'); return true;">Sign up here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+eel
+pyautogui
+torch
+torchvision
+numpy
+pandas
+joblib
+opencv-python
+Pillow
+mediapipe
+scikit-learn

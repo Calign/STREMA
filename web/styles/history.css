@@ -1,0 +1,84 @@
+/*history.css*/
+.history-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px; /* space between rows */
+}
+
+.history-table th, 
+.history-table td {
+    padding: 10px 12px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.history-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.history-table tr:hover {
+    background-color: #f0f8ff;
+}
+
+.summary-card {
+    background-color: #f9f9f9;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    display: inline-block;
+}
+
+/* --- Filter Dropdown Styling --- */
+#filterByTime,
+#filterByMode {
+  font-family: "Barlow", sans-serif;
+  font-size: 15px;
+  padding: 6px 12px;
+  border: 1.5px solid #aaa;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#filterByTime:hover,
+#filterByMode:hover {
+  border-color: #008cff;
+  box-shadow: 0 0 4px rgba(0, 140, 255, 0.4);
+}
+
+#filterByTime:focus,
+#filterByMode:focus {
+  outline: none;
+  border-color: #008cff;
+  box-shadow: 0 0 6px rgba(0, 140, 255, 0.5);
+}
+
+
+/* ===================== Dance Exercise Section ===================== */
+.dance-exercise-section {
+    margin-top: 50px;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.dance-exercise-section h2 {
+    color: #ff006e;
+    margin-bottom: 15px;
+    font-size: 22px;
+}
+
+/* Reuse the same .exercise-list and .exercise-btn styles from quick exercises */
+#danceExercisePlayerContainer {
+    margin-top: 15px;
+    width: 100%;
+    max-height: 300px;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}

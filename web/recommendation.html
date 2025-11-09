@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>STREMA</title>
+    <link rel="stylesheet" href="styles/recommendations.css">
+    <link rel="stylesheet" href="styles/general.css">
+    <link rel="icon" href="assets/logo.png" type="image/png">
+    <script src="/eel.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <h3 class="logo">STREMA</h3>
+        <div class="nav-section">
+            <p class="nav-item" onclick="navigateWithSlide('home.html', 'right')">Home</p>
+            <p class="nav-item active" onclick="navigateWithSlide('recommendation.html', 'right')">Recommendations</p>
+            <p class="nav-item" onclick="navigateWithSlide('history.html', 'left')">History</p>
+            <p class="nav-item" onclick="navigateWithSlide('settings.html', 'left')">Settings</p>
+        </div>
+        <div class="username-container">
+            <img class="user-icon" src="assets/user_icon.png" alt="User">
+            <span class="username" id="usernameDisplay">Username</span>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1 class="hero-title">Recommendations</h1>
+        <p class="hero-text">Take a moment to relax with a breathing exercise, a power nap, or some music.</p>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-container">
+        <div class="card breathing-section">
+            <h2>Breathing Exercise</h2>
+            <button id="startBreathingBtn" class="start-btn">Start</button>
+            <div id="breathingContainer" class="breathing-container hidden">
+                <div class="breathing-circle" id="breathingCircle"></div>
+                <p id="breathingText" class="breathing-text">Get ready...</p>
+                <p id="timerDisplay" class="timer-display">1:00</p>
+                <button id="stopBreathingBtn" class="stop-btn">Stop</button>
+            </div>
+        </div>
+
+        <div class="card powernap-section">
+            <h2>Power Nap Timer</h2>
+            <p>Choose a duration and relax while the timer tracks your rest.</p>
+            <div class="nap-options">
+                <button class="nap-btn" data-minutes="10">10 min</button>
+                <button class="nap-btn" data-minutes="20">20 min</button>
+                <button class="nap-btn" data-minutes="30">30 min</button>
+                <button class="nap-btn" data-minutes="60">1 hr</button>
+                <button class="nap-btn" data-minutes="120">2 hrs</button>
+            </div>
+            <div id="napTimerContainer" class="nap-timer hidden">
+                <div id="napTimeDisplay" class="nap-time-display">00:00</div>
+                <button id="stopNapBtn" class="stop-btn">Stop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Music Section -->
+    <div class="music-section">
+        <div class="music-column">
+            <h2>My YouTube Tracks</h2>
+            <input type="text" id="youtubeLinkInput" placeholder="Paste YouTube URL here">
+            <button id="addYoutubeBtn">Add Track</button>
+            <div id="uploadedList"></div>
+            <div id="youtubePlayerContainer"></div>
+            <div id="trackStatus"></div>
+        </div>
+
+        <div class="music-column">
+            <h2>Playlists</h2>
+            <input type="text" id="newPlaylistName" placeholder="Playlist name">
+            <button id="createPlaylistBtn">Create Playlist</button>
+            
+            <div id="playlistContainer"></div>
+        </div>
+    </div>
+
+    <!-- Exercise Section -->
+    <div class="exercise-section">
+        <h2>Quick Exercises</h2>
+        <div id="exerciseList" class="exercise-list">
+            <!-- Buttons will be dynamically added here -->
+        </div>
+        <div id="exercisePlayerContainer"></div>
+    </div>
+
+    <!-- Dance Exercise Section -->
+    <div class="dance-exercise-section">
+        <h2>Dance Exercises</h2>
+        <div id="danceExerciseList" class="exercise-list">
+            <!-- Buttons will be dynamically added here -->
+        </div>
+        <div id="danceExercisePlayerContainer"></div>
+    </div>
+
+
+
+    <script src="script.js"></script>
+
+    
+</body>
+</html>

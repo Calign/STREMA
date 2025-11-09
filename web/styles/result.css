@@ -1,0 +1,241 @@
+/* result.css */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background: #f7f9fc;
+    color: #333;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1f2937;
+    color: #fff;
+    padding: 10px 20px;
+}
+
+.navbar .logo {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.nav-section {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-item {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.nav-item:hover {
+    color: #3b82f6;
+}
+
+.username-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+/* Hero */
+.hero {
+    text-align: center;
+    padding: 30px 20px 10px 20px;
+}
+
+.hero-title {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: #1f2937;
+}
+
+.hero-text {
+    font-size: 1rem;
+    color: #fff;
+}
+
+/* Results Container */
+.result-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Summary Card */
+.result-summary {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    color: #fff;
+    padding: 30px 20px;
+    border-radius: 15px;
+    text-align: center;
+    flex: 1 1 250px;
+    min-width: 250px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.result-summary:hover {
+    transform: translateY(-5px);
+}
+
+.result-summary h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.4rem;
+}
+
+.result-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.scale-info {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+/* Details Card */
+.result-details {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    flex: 1 1 300px;
+    min-width: 300px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.result-details h3 {
+    margin-top: 0;
+    color: #1f2937;
+    margin-bottom: 10px;
+}
+
+.result-details ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.result-details li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+}
+
+.result-details li:last-child {
+    border-bottom: none;
+}
+
+/* Captured Image Card */
+.result-image {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    flex: 1 1 300px;
+    min-width: 300px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+.result-image img {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Controls */
+.controls {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.controls button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+}
+
+.controls button#saveBtn {
+    background-color: #10b981;
+    color: #fff;
+}
+
+.controls button#saveBtn:hover {
+    background-color: #059669;
+}
+
+.controls button:not(#saveBtn) {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.controls button:not(#saveBtn):hover {
+    background-color: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .result-container {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+.result-recommendation {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f4f8ff;
+    border-left: 5px solid #4caf50;
+    border-radius: 5px;
+}
+
+.result-recommendation li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.result-recommendation p {
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+/* Stress description under Overall Stress Level */
+#stressScaleInfo {
+    font-size: 1.5rem;       /* bigger text */
+    font-weight: 500;        /* slightly bolder */
+    margin-top: 10px;        /* spacing below stress number */
+    color: #fff;             /* optional default color */
+    text-align: center;      /* center it under the number */
+}
+
+
+
