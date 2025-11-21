@@ -77,8 +77,8 @@ body {
 
 /* Summary Card */
 .result-summary {
-    background: linear-gradient(135deg, #3b82f6, #06b6d4);
-    color: #fff;
+    background: linear-gradient(135deg, #fff);
+    color: #333;
     padding: 30px 20px;
     border-radius: 15px;
     text-align: center;
@@ -233,9 +233,55 @@ body {
     font-size: 1.5rem;       /* bigger text */
     font-weight: 500;        /* slightly bolder */
     margin-top: 10px;        /* spacing below stress number */
-    color: #fff;             /* optional default color */
+    color: #000;             /* optional default color */
     text-align: center;      /* center it under the number */
 }
 
 
+/* ===================== Stress Bar ===================== */
+.stress-bar-container {
+  margin-top: 20px;
+  text-align: center;
+}
 
+.stress-bar {
+  position: relative;
+  height: 20px;
+  width: 90%;
+  margin: 0 auto 15px auto;
+  border-radius: 10px;
+  background: linear-gradient(to right, #00ff00, #ffff00, #ff0000);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.stress-labels {
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  width: 100%;
+  top: 25px;
+  font-size: 0.85rem;
+  color: #000;
+}
+
+.stress-indicator {
+  position: absolute;
+  top: -25px;
+  font-size: 1.2rem;
+  color: #000;
+  transition: left 0.5s ease;
+}
+
+.stress-sprites {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  margin: 10px auto 0 auto;
+}
+
+.sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}

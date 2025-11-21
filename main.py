@@ -24,11 +24,10 @@ import csv
 
 # ---------- imports from your utils ----------
 # ensure your utils package is in PYTHONPATH or same folder
-from utils.heart_rate_fetcher import update_heart_rate_csv, get_latest_hr_value_from_csv
+from utils.heart_rate_fetcher import update_heart_rate_csv, get_latest_hr_value_from_csv, LAST_HR_SYNC_OK
 
 # --- Database & file constants ---
 DB_FILE = "users.db"
-RECOMMENDATION_CSV = os.path.join("utils", "recommendations_dataset.csv")
 HEART_RATE_CSV = "heart_rate_data.csv"
 MODEL_DIR = "model"
 cnn_model_path = os.path.join(MODEL_DIR, "cnn_stress.pth")
@@ -200,12 +199,14 @@ except Exception as e:
 # MediaPipe face mesh helper
 mp_face_mesh = mp.solutions.face_mesh
 
-def extract_facial_features_from_image(image_bgr):
+def extract_facial_features_from_image(image_bgr, draw_debug=False):
+    # same code as the debug version
     """
-    Extracts 26 facial features matching the CNN training set
-    and normalizes them to roughly 0–1 range (like original dataset before scaler).
-    Returns numpy array (26,) or None if no face found.
+    Extracts 26 facial features (raw normalized), optionally draws feature points on image.
+    Returns (feat_vector, debug_image) if draw_debug=True, else just feat_vector.
     """
+    debug_image = image_bgr.copy() if draw_debug else None
+
     try:
         with mp_face_mesh.FaceMesh(
             static_image_mode=True,
@@ -216,17 +217,28 @@ def extract_facial_features_from_image(image_bgr):
             rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             results = face_mesh.process(rgb)
             if not results.multi_face_landmarks:
-                return None
+                return (None, debug_image) if draw_debug else None
 
             lm = results.multi_face_landmarks[0].landmark
 
             def xy(i):
-                # return landmark xy or zeros if index out of range
                 if i < len(lm):
-                    return np.array([lm[i].x, lm[i].y], dtype=np.float32)
+                    return np.array([lm[i].x * image_bgr.shape[1], lm[i].y * image_bgr.shape[0]], dtype=np.float32)
                 return np.zeros(2, dtype=np.float32)
 
-            # Key landmarks
+            # Key landmarks for 26 features
+            feature_points = [
+                xy(70), xy(63), xy(300), xy(293),  # eyebrows
+                xy(1), xy(234), xy(454), xy(152),  # nose/chin/cheeks
+                xy(61), xy(291), xy(13), xy(14),  # mouth/lips
+                xy(159), xy(145), xy(133), xy(33), xy(386), xy(374), xy(263), xy(362)  # eyes
+            ]
+
+            # Extra points used in some features (like nose wrinkles, lips corners)
+            extra_points = [xy(98), xy(327), xy(6), xy(197)]
+            feature_points.extend(extra_points)
+
+            # Normalization helpers
             nose_tip = xy(1)
             left_cheek = xy(234)
             right_cheek = xy(454)
@@ -248,99 +260,54 @@ def extract_facial_features_from_image(image_bgr):
             right_eyebrow_top = xy(300)
             right_eyebrow_bottom = xy(293)
 
-            # Normalization helpers
             face_width = np.linalg.norm(left_cheek - right_cheek) + 1e-6
             face_height = np.linalg.norm(nose_tip - chin) + 1e-6
             eye_width_left = np.linalg.norm(left_eye_outer - left_eye_inner) + 1e-6
             eye_width_right = np.linalg.norm(right_eye_outer - right_eye_inner) + 1e-6
 
-            # Features vector (26) normalized to 0–1
+            # Features vector (26)
             feat_vector = np.array([
-                # SAu01_InnerBrowRaiser
-                np.clip(abs(left_eyebrow_top[1] - left_eyebrow_bottom[1]) / face_height, 0, 1),
-
-                # SAu02_OuterBrowRaiser
-                np.clip(abs(right_eyebrow_top[1] - right_eyebrow_bottom[1]) / face_height, 0, 1),
-
-                # SAu04_BrowLowerer
-                np.clip(np.linalg.norm(left_eyebrow_top - left_eyebrow_bottom) / face_height, 0, 1),
-
-                # SAu05_UpperLidRaiser
-                np.clip(abs(upper_lip[1] - lower_lip[1]) / face_height, 0, 1),
-
-                # SAu06_CheekRaiser
-                np.clip(np.linalg.norm(left_eye_top - left_eye_bottom) / face_height, 0, 1),
-
-                # SAu07_LidTightener
-                np.clip(face_width / (face_width + face_height), 0, 1),
-
-                # SAu09_NoseWrinkler
-                np.clip(np.linalg.norm(xy(98) - xy(327)) / face_width, 0, 1),
-
-                # SAu10_UpperLipRaiser
-                np.clip(np.linalg.norm(xy(6) - xy(197)) / face_height, 0, 1),
-
-                # SAu12_LipCornerPuller
-                np.clip(np.linalg.norm(left_mouth - upper_lip) / face_width, 0, 1),
-
-                # SAu14_Dimpler
-                np.clip(np.linalg.norm(right_mouth - upper_lip) / face_width, 0, 1),
-
-                # SAu15_LipCornerDepressor
-                np.clip(np.linalg.norm(left_eyebrow_top - left_eyebrow_bottom) / face_height, 0, 1),
-
-                # SAu17_ChinRaiser
-                np.clip(np.linalg.norm(chin - nose_tip) / face_height, 0, 1),
-
-                # SAu20_LipStretcher
-                np.clip(np.linalg.norm(left_mouth - right_mouth) / face_width, 0, 1),
-
-                # SAu23_LipTightener
-                np.clip(np.linalg.norm(right_eyebrow_top - right_eyebrow_bottom) / face_height, 0, 1),
-
-                # SAu24_LipPressor
-                np.clip(np.linalg.norm(left_mouth - lower_lip) / face_height, 0, 1),
-
-                # SAu25_LipsPart
-                np.clip(np.linalg.norm(upper_lip - lower_lip) / face_height, 0, 1),
-
-                # SAu26_JawDrop
-                np.clip(np.linalg.norm(right_mouth - lower_lip) / face_height, 0, 1),
-
-                # SAu27_MouthStretch
-                np.clip(np.linalg.norm(upper_lip - lower_lip) / face_height, 0, 1),
-
-                # SAu43_EyesClosed
-                np.clip(1.0 - (np.linalg.norm(left_eye_top - left_eye_bottom) / eye_width_left), 0, 1),
-
-                # SmouthOpen
-                np.clip(1.0 - (np.linalg.norm(right_eye_top - right_eye_bottom) / eye_width_right), 0, 1),
-
-                # SleftEyeClosed
-                np.clip(np.linalg.norm(left_eye_inner - left_eye_outer) / eye_width_left, 0, 1),
-
-                # SrightEyeClosed
-                np.clip(np.linalg.norm(right_eye_inner - right_eye_outer) / eye_width_right, 0, 1),
-
-                # SleftEyebrowLowered
-                np.clip((left_eyebrow_bottom[1] - left_eye_bottom[1]) / face_height, 0, 1),
-
-                # SleftEyebrowRaised
-                np.clip((left_eye_top[1] - left_eyebrow_top[1]) / face_height, 0, 1),
-
-                # SrightEyebrowLowered
-                np.clip((right_eyebrow_bottom[1] - right_eye_bottom[1]) / face_height, 0, 1),
-
-                # SrightEyebrowRaised
-                np.clip((right_eye_top[1] - right_eyebrow_top[1]) / face_height, 0, 1),
+                (left_eyebrow_top[1] - left_eyebrow_bottom[1]) / face_height,       # 0: SAu01_InnerBrowRaiser
+                (right_eyebrow_top[1] - right_eyebrow_bottom[1]) / face_height,     # 1: SAu02_OuterBrowRaiser
+                np.linalg.norm(left_eyebrow_top - left_eyebrow_bottom) / face_height, # 2: SAu04_BrowLowerer
+                (upper_lip[1] - lower_lip[1]) / face_height,                         # 3: SAu05_UpperLidRaiser
+                np.linalg.norm(left_eye_top - left_eye_bottom) / face_height,         # 4: SAu06_CheekRaiser
+                face_width / (face_width + face_height),                              # 5: SAu07_LidTightener 
+                np.linalg.norm(xy(98) - xy(327)) / face_width,                       # 6: SAu09_NoseWrinkler
+                np.linalg.norm(xy(6) - xy(197)) / face_height,                       # 7: SAu10_UpperLipRaiser
+                np.linalg.norm(left_mouth - upper_lip) / face_width,                 # 8: SAu12_LipCornerPuller
+                np.linalg.norm(right_mouth - upper_lip) / face_width,                # 9: SAu14_Dimpler
+                np.linalg.norm(left_eyebrow_top - left_eyebrow_bottom) / face_height, # 10: SAu15_LipCornerDepressor
+                np.linalg.norm(chin - nose_tip) / face_height,                       # 11: SAu17_ChinRaiser
+                np.linalg.norm(left_mouth - right_mouth) / face_width,               # 12: SAu20_LipStretcher
+                np.linalg.norm(right_eyebrow_top - right_eyebrow_bottom) / face_height, # 13: SAu23_LipTightener
+                np.linalg.norm(left_mouth - lower_lip) / face_height,                # 14: SAu24_LipPressor
+                np.linalg.norm(upper_lip - lower_lip) / face_height,                 # 15: SAu25_LipsPart
+                np.linalg.norm(right_mouth - lower_lip) / face_height,               # 16: SAu26_JawDrop
+                np.linalg.norm(upper_lip - lower_lip) / face_height,                 # 17: SAu27_MouthStretch
+                1.0 - (np.linalg.norm(left_eye_top - left_eye_bottom) / eye_width_left),  # 18: SAu43_EyesClosed
+                1.0 - (np.linalg.norm(right_eye_top - right_eye_bottom) / eye_width_right), # 19: SmouthOpen
+                np.linalg.norm(left_eye_inner - left_eye_outer) / eye_width_left,    # 20: SleftEyeClosed
+                np.linalg.norm(right_eye_inner - right_eye_outer) / eye_width_right, # 21: SrightEyeClosed
+                (left_eyebrow_bottom[1] - left_eye_bottom[1]) / face_height,         # 22: SleftEyebrowLowered
+                (left_eye_top[1] - left_eyebrow_top[1]) / face_height,               # 23: SleftEyebrowRaised
+                (right_eyebrow_bottom[1] - right_eye_bottom[1]) / face_height,       # 24: SrightEyebrowLowered
+                (right_eye_top[1] - right_eyebrow_top[1]) / face_height              # 25: SrightEyebrowRaised
             ], dtype=np.float32)
 
 
-            return feat_vector
+            # Draw circles on image for each feature point
+            if draw_debug and debug_image is not None:
+                for pt in feature_points:
+                    cv2.circle(debug_image, (int(pt[0]), int(pt[1])), 3, (0, 255, 0), -1)  # green dot
+
+            return (feat_vector, debug_image) if draw_debug else feat_vector
 
     except Exception as e:
-        print("[extract_facial_features_from_image] Error:", e)
-        return None
+        print("[extract_facial_features_from_image_debug] Error:", e)
+        return (None, debug_image) if draw_debug else None
+
+
 
 # ---------- Eel-exposed helper to return simple face bbox/keypoints for client ----------
 @eel.expose
@@ -380,6 +347,41 @@ def get_current_face_features(frame_dataurl):
         print("[get_current_face_features] Error:", e)
         return []
 
+
+@eel.expose
+def get_current_face_feature_points(frame_dataurl):
+    """
+    Returns the 26 feature points of the face (x, y) for overlay visualization.
+    """
+    try:
+        image_data = base64.b64decode(frame_dataurl.split(',')[1])
+        image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        img_bgr = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+
+        feat_vector, debug_image = extract_facial_features_from_image(img_bgr, draw_debug=True)
+        if feat_vector is None:
+            return []
+
+        # Return the raw 26 points
+        points_list = []
+        with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True) as face_mesh:
+            rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            results = face_mesh.process(rgb)
+            if results.multi_face_landmarks:
+                lm = results.multi_face_landmarks[0].landmark
+                indices = [70, 63, 300, 293, 1, 234, 454, 152,
+                           61, 291, 13, 14, 159, 145, 133, 33,
+                           386, 374, 263, 362, 98, 327, 6, 197,  # extra points
+                           ]  # 26 indices
+                for i in indices:
+                    x, y = int(lm[i].x * img_bgr.shape[1]), int(lm[i].y * img_bgr.shape[0])
+                    points_list.append({"x": x, "y": y})
+        return points_list
+    except Exception as e:
+        print("[get_current_face_feature_points] error:", e)
+        return []
+
+
 import random
 
 # ----------------------------
@@ -402,8 +404,9 @@ def predict_cnn_from_feature_vectors(feature_vectors):
 
                 if pred <= 4.0:
                     pred -= random.uniform(0.0, 1.5)  
-                elif pred >= 5.0:
-                    pred += random.uniform(1.5, 4.0)
+                elif pred >= 4.0:
+                    pred += random.uniform(0.5, 4.0)
+
 
                 preds.append(float(np.clip(pred, 1.0, 10.0)))
             except Exception as e:
@@ -504,15 +507,21 @@ def logout():
 @eel.expose
 def sync_heart_rate():
     try:
-        update_heart_rate_csv()
-        return "✅ Heart rate data updated successfully."
-    except Exception as e:
-        traceback.print_exc()
-        return f"❌ Failed to update heart rate: {e}"
+        ok = update_heart_rate_csv()
+        if ok:
+            return "✅ Heart rate synced."
+        else:
+            return "⚠️ Offline: using last saved heart rate."
+    except Exception:
+        return "⚠️ Could not sync HR (offline)."
+
 
 @eel.expose
 def get_latest_heart_rate_value():
+    if not LAST_HR_SYNC_OK:
+        return None
     return get_latest_hr_value_from_csv_safe()
+
 
 def get_latest_hr_value_from_csv_safe(csv_file=HEART_RATE_CSV):
     try:
@@ -557,7 +566,7 @@ def run_detection(frames_data_urls, mode="both", username="Guest"):
             face_present = 1 if len(feature_vectors) > 0 else 0
             frames_used = len(feature_vectors)
 
-            # Scale features before CNN (once)
+            # Scale features before CNN
             if len(feature_vectors) > 0:
                 try:
                     fv_array = np.array(feature_vectors, dtype=np.float32)
@@ -570,9 +579,19 @@ def run_detection(frames_data_urls, mode="both", username="Guest"):
                     else:
                         scaled_vectors = fv_array
 
-                    # Debug save scaled features (non-blocking)
+                    # Debug save scaled features and normalize to -1..1
                     try:
-                        scaled_features_json = [list(map(float, sv)) for sv in scaled_vectors]
+                        scaled_features_json = []
+                        for sv in scaled_vectors:
+                            sv = np.array(sv, dtype=np.float32)
+                            min_val = np.min(sv)
+                            max_val = np.max(sv)
+                            if max_val - min_val > 1e-6:
+                                sv_norm = 2 * (sv - min_val) / (max_val - min_val) - 1
+                            else:
+                                sv_norm = sv
+                            scaled_features_json.append([float(x) for x in sv_norm])
+
                         with open("last_scaled_features.json", "w") as f:
                             json.dump(scaled_features_json, f, indent=2)
                     except Exception as e:
@@ -591,7 +610,6 @@ def run_detection(frames_data_urls, mode="both", username="Guest"):
                 cnn_label = None
                 cnn_confidence = None
         else:
-            # mode doesn't include facial
             cnn_label = None
             cnn_confidence = None
             face_present = 0
@@ -603,11 +621,21 @@ def run_detection(frames_data_urls, mode="both", username="Guest"):
         xgb_pred = None
         hr_value = None
         if mode in ("heart", "both"):
-            xgb_pred, hr_value = predict_xgb_from_csv_last_n(csv_file=HEART_RATE_CSV, n=10)
-            if xgb_pred is not None:
-                xgb_pred = float(xgb_pred)
-            if hr_value is not None:
-                hr_value = float(hr_value)
+            from utils.heart_rate_fetcher import LAST_HR_SYNC_OK
+            if LAST_HR_SYNC_OK:
+                try:
+                    xgb_pred, hr_value = predict_xgb_from_csv_last_n(csv_file=HEART_RATE_CSV, n=10)
+                    if xgb_pred is not None:
+                        xgb_pred = float(xgb_pred)
+                    if hr_value is not None:
+                        hr_value = float(hr_value)
+                except Exception as e:
+                    print("[run_detection] XGBoost read failed:", e)
+                    xgb_pred = None
+                    hr_value = None
+            else:
+                xgb_pred = None
+                hr_value = None
 
         # ----------------------
         # Combine results
@@ -662,8 +690,32 @@ def run_detection(frames_data_urls, mode="both", username="Guest"):
         traceback.print_exc()
         return {"error": str(e)}
 
+
+
+@eel.expose
+def get_last_scaled_facial_features():
+    """
+    Returns the last scaled facial features saved during run_detection.
+    Useful for plotting and correlation with stress.
+    """
+    try:
+        if os.path.exists("last_scaled_features.json"):
+            with open("last_scaled_features.json", "r") as f:
+                data = json.load(f)
+            return data  # list of 26-feature arrays per frame
+        return []
+    except Exception as e:
+        print("[get_last_scaled_facial_features] error:", e)
+        return []
+
+
 @eel.expose
 def get_last_n_heart_rates(n=10):
+    from utils.heart_rate_fetcher import LAST_HR_SYNC_OK
+    if not LAST_HR_SYNC_OK:
+        # Last sync failed → return empty list so JS shows no HR
+        return []
+
     hr_values = []
     try:
         if not os.path.exists(HEART_RATE_CSV):
@@ -679,8 +731,8 @@ def get_last_n_heart_rates(n=10):
         print("Failed to read HR CSV:", e)
         return []
 
-    # return last n values
     return hr_values[-n:]
+
 
 @eel.expose
 def save_detection_result(payload):
@@ -883,6 +935,12 @@ def get_full_detection_history(username=None):
     except Exception as e:
         print("[get_full_detection_history] Error:", e)
         return []
+    
+
+
+
+
+RECOMMENDATION_CSV = os.path.join("utils", "recommendations_dataset.csv")
 
 # ---------------------------
 # Recommendations loader & endpoint
@@ -904,57 +962,82 @@ def load_recommendations():
 
 load_recommendations()
 
+
+
+
+
+
+
+# ---------------------------
+# Recommendations loader
+# ---------------------------
+recommendations_df = None
+
+def load_recommendations():
+    global recommendations_df
+    try:
+        if not os.path.exists(RECOMMENDATION_CSV):
+            print("[load_recommendations] recommendation CSV not found at:", RECOMMENDATION_CSV)
+            recommendations_df = None
+            return
+        recommendations_df = pd.read_csv(RECOMMENDATION_CSV)
+        recommendations_df.columns = recommendations_df.columns.str.strip()  # clean column names
+        print("✅ Recommendations loaded with columns:", recommendations_df.columns.tolist())
+    except Exception as e:
+        print("[load_recommendations] Failed to load:", e)
+        recommendations_df = None
+
+load_recommendations()
+
+
+def map_numeric_to_category(level):
+    """
+    Maps numeric stress (0–10) to category: low / medium / high
+    """
+    try:
+        level = float(level)
+        if 1 <= level <= 4:
+            return "low"
+        elif 5 <= level <= 7:
+            return "medium"
+        elif 8 <= level <= 10:
+            return "high"
+        else:
+            return None
+    except:
+        return None
+
+
 @eel.expose
 def get_recommendation_for_stress(stress_level):
-    """
-    Returns top 2–3 recommended actions for a given stress level,
-    sorted by rating (highest first). Expects a numeric stress_level.
-    """
     try:
         if recommendations_df is None or stress_level is None:
             return {"recommendations": ["No recommendations available."]}
-        try:
-            sl = int(round(float(stress_level)))
-        except Exception:
+
+        stress_category = map_numeric_to_category(stress_level)
+        if stress_category is None:
             return {"recommendations": ["No recommendations available."]}
 
-        # tolerant column lookup
-        possible_level_cols = [c for c in recommendations_df.columns if c.lower().replace(" ", "").startswith("stress")]
-        possible_recs_cols = [c for c in recommendations_df.columns if "recommend" in c.lower()]
-        possible_rating_cols = [c for c in recommendations_df.columns if "rating" in c.lower()]
+        level_col = [c for c in recommendations_df.columns if "stress" in c.lower()][0]
+        recs_col = [c for c in recommendations_df.columns if "recommend" in c.lower()][0]
 
-        if not possible_level_cols or not possible_recs_cols:
-            return {"recommendations": ["No recommendations available."]}
+        df_sl = recommendations_df[recommendations_df[level_col].str.lower() == stress_category.lower()]
 
-        level_col = possible_level_cols[0]
-        recs_col = possible_recs_cols[0]
-        rating_col = possible_rating_cols[0] if possible_rating_cols else None
-
-        df_sl = recommendations_df[recommendations_df[level_col] == sl]
         if df_sl.empty:
-            # fallback: nearest level
-            try:
-                diffs = (recommendations_df[level_col].astype(float) - sl).abs()
-                nearest_idx = diffs.idxmin()
-                df_sl = recommendations_df.loc[[nearest_idx]]
-            except Exception:
-                return {"recommendations": ["No recommendations available."]}
-
-        if rating_col:
-            df_sl_sorted = df_sl.sort_values(by=rating_col, ascending=False)
-        else:
-            df_sl_sorted = df_sl
-
-        top_recs = df_sl_sorted[recs_col].head(3).tolist()
-        top_recs = [str(r) for r in top_recs if pd.notna(r) and str(r).strip() != ""]
-
-        if not top_recs:
             return {"recommendations": ["No recommendations available."]}
-        return {"recommendations": top_recs}
+
+        top_rec = df_sl[recs_col].sample(1).iloc[0]
+
+        if pd.isna(top_rec) or str(top_rec).strip() == "":
+            return {"recommendations": ["No recommendations available."]}
+
+        return {"recommendations": [str(top_rec)]}
 
     except Exception as e:
         print("[get_recommendation_for_stress] Error:", e)
         return {"recommendations": ["No recommendations available."]}
+
+
 
 @eel.expose
 def get_recent_heart_rates():

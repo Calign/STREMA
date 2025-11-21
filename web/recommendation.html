@@ -20,7 +20,7 @@
         </div>
         <div class="username-container">
             <img class="user-icon" src="assets/user_icon.png" alt="User">
-            <span class="username" id="usernameDisplay">Username</span>
+            <span class="username" id="displayUsername">Username</span>
         </div>
     </div>
 
@@ -61,6 +61,7 @@
     </div>
 
     <!-- Music Section -->
+    <div id="notificationBox" class="notification hidden"></div>
     <div class="music-section">
         <div class="music-column">
             <h2>My YouTube Tracks</h2>
@@ -80,25 +81,23 @@
         </div>
     </div>
 
-    <!-- Exercise Section -->
+    <!-- Quick Exercise Section -->
     <div class="exercise-section">
         <h2>Quick Exercises</h2>
         <div id="exerciseList" class="exercise-list">
-            <!-- Buttons will be dynamically added here -->
+            <!-- Buttons dynamically added -->
         </div>
         <div id="exercisePlayerContainer"></div>
     </div>
 
     <!-- Dance Exercise Section -->
-    <div class="dance-exercise-section">
+    <div class="exercise-section"> <!-- use same class for unified style -->
         <h2>Dance Exercises</h2>
         <div id="danceExerciseList" class="exercise-list">
-            <!-- Buttons will be dynamically added here -->
+            <!-- Buttons dynamically added -->
         </div>
         <div id="danceExercisePlayerContainer"></div>
     </div>
-
-
 
     <script src="script.js"></script>
 

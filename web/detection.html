@@ -20,7 +20,7 @@
         </div>
         <div class="username-container">
             <img class="user-icon" src="assets/user_icon.png" alt="User">
-            <span class="username" id="usernameDisplay">Username</span>
+            <span class="username" id="displayUsername">Username</span>
         </div>
     </div>
 
@@ -64,6 +64,38 @@
         <h4>Current Heart Rate</h4>
         <div id="currentHR" class="hr-box">--</div>
     </div>
+
+    <div id="loadingOverlay" style="
+        position: fixed;
+        top:0; left:0; right:0; bottom:0;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-size: 2em;
+        flex-direction: column;
+    ">
+        <div class="spinner" style="
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #00ff00;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        "></div>
+        Processing results...
+    </div>
+
+    <style>
+    @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+    }
+    </style>
+
 
     <hr class="divider">
     <script src="script.js"></script>

@@ -1,4 +1,4 @@
- <!--result.html--> 
+<!-- result.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,9 +7,12 @@
   <link rel="stylesheet" href="styles/result.css" />
   <link rel="stylesheet" href="styles/general.css" />
   <link rel="icon" href="assets/logo.png" type="image/png">
+
   <script src="/eel.js"></script>
   <script src="script.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
   <!-- Navbar -->
   <div class="navbar">
@@ -22,7 +25,7 @@
     </div>
     <div class="username-container">
       <img class="user-icon" src="assets/user_icon.png" alt="User" />
-      <span class="username" id="usernameDisplay">User</span>
+      <span class="username" id="displayUsername">Username</span>
     </div>
   </div>
 
@@ -34,59 +37,76 @@
     </p>
   </div>
 
-  <!-- Results Container -->
-  <div class="result-container">
-    <!-- Summary -->
-    <div class="result-summary">
-      <h2>Overall Stress Level</h2>
-      <div id="stressLevel" class="result-value">--</div>
-      <p class="scale-info" id="stressScaleInfo"></p>
+  <div class="result-summary">
+    <h2>Overall Stress Level</h2>
+    <div id="stressLevel" class="result-value">--</div>
+
+    <!-- Stress Bar -->
+    <div class="stress-bar-container">
+      <div class="stress-bar">
+        <div class="stress-labels">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+          <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+        </div>
+
+        <div id="stress-indicator" class="stress-indicator">▼</div>
+      </div>
+
+      <div class="stress-sprites">
+        <img src="assets/sprite/sprite1.png" class="sprite" />
+        <img src="assets/sprite/sprite2.png" class="sprite" />
+        <img src="assets/sprite/sprite3.png" class="sprite" />
+      </div>
     </div>
 
-    <!-- Detailed Breakdown -->
-    <div class="result-details">
-      <h3>Detailed Breakdown</h3>
-      <ul>
-        <li>Detection Mode: <span id="mode">--</span></li>
-        <li>Facial CNN Prediction: <span id="cnnResult">--</span></li>
-        <li>Heart Rate: <span id="hrValue">--</span></li>
-        <li>XGBoost (HR-based): <span id="xgbResult">--</span></li>
-        <li>Confidence (CNN): <span id="cnnConf">--</span></li>
-        <li>Face Detected: <span id="faceDetected">--</span></li>
-      </ul>
-    </div>
+    <p class="scale-info" id="stressScaleInfo"></p>
+  </div>
 
-    <!-- Captured Image -->
-    <div class="result-image">
-      <h3>Captured Image</h3>
-      <img id="capturedImg" src="" alt="Captured Frame" />
-    </div>
+  <!-- Detailed Breakdown -->
+  <div class="result-details">
+    <h3>Detailed Breakdown</h3>
+    <ul>
+      <li>Detection Mode: <span id="mode">--</span></li>
+      <li>Facial CNN Prediction: <span id="cnnResult">--</span></li>
+      <li>Heart Rate: <span id="hrValue">--</span></li>
+      <li>XGBoost (HR-based): <span id="xgbResult">--</span></li>
+      <li>Confidence (CNN): <span id="cnnConf">--</span></li>
+      <li>Face Detected: <span id="faceDetected">--</span></li>
+    </ul>
+  </div>
 
-    <!-- Recommendation -->
-    <div class="result-recommendation">
-      <h3>Recommended Stress Management Action</h3>
-      <p id="stressRecommendation">Loading recommendation...</p>
-    </div>
+  <!-- Captured Image -->
+  <div class="result-image">
+    <h3>Captured Image</h3>
+    <img id="capturedImg" src="" alt="Captured Frame" />
+  </div>
 
-    <!-- Controls -->
-    <div class="controls">
-      <button id="saveBtn">💾 Save Result</button>
-      <button onclick="window.location.href='detection.html'">▶ Run Again</button>
-      <button onclick="window.location.href='recommendation.html'">💡Recommendations</button>
-    </div>
+  <div class="result-feature-graph">
+    <h3>Facial Feature Intensities</h3>
+    <canvas id="featureGraph" width="800" height="400"></canvas>
+  </div>
 
+  <!-- Recommendation -->
+  <div class="result-recommendation">
+    <h3>Recommended Stress Management Action</h3>
+    <p id="stressRecommendation">Loading recommendation...</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button id="saveBtn">💾 Save Result</button>
+    <button onclick="window.location.href='detection.html'">▶ Run Again</button>
+    <button onclick="window.location.href='recommendation.html'">💡Recommendations</button>
   </div>
 
 
-
-  <!-- JS -->
+  <!-- JS Handler -->
   <script>
-    // ✅ Display username
-    document.getElementById("usernameDisplay").textContent =
-      localStorage.getItem("username") || "Guest";
+    document.addEventListener("DOMContentLoaded", async () => {
 
-    // ✅ Load and render detection results
-    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("usernameDisplay").textContent =
+        localStorage.getItem("username") || "Guest";
+
       const stressEl = document.getElementById("stressLevel");
       const modeEl = document.getElementById("mode");
       const cnnEl = document.getElementById("cnnResult");
@@ -96,6 +116,7 @@
       const faceEl = document.getElementById("faceDetected");
       const imgEl = document.getElementById("capturedImg");
       const saveBtn = document.getElementById("saveBtn");
+      const recEl = document.getElementById("stressRecommendation");
 
       const stored = localStorage.getItem("last_detection_result");
 
@@ -104,38 +125,41 @@
         return;
       }
 
-      const { detected, hr_series, captured_frame } = JSON.parse(stored);
+      const { detected, captured_frame } = JSON.parse(stored);
 
       if (!detected) {
         stressEl.innerText = "Detection failed.";
         return;
       }
 
-      const fmt = (v, decimals=1) => (v != null && !Number.isNaN(v)) ? Number(v).toFixed(decimals) : "--";
+      const fmt = (v, d=1) =>
+        v != null && !Number.isNaN(v) ? Number(v).toFixed(d) : "--";
 
-      // Display results
       stressEl.innerText = detected.combined != null ? `${fmt(detected.combined)} / 10` : "--";
       modeEl.innerText = detected.mode || "both";
-      cnnEl.innerText = detected.cnn_label != null ? fmt(detected.cnn_label) : "N/A";
-      xgbEl.innerText = detected.xgb_pred != null ? fmt(detected.xgb_pred) : "N/A";
-      hrEl.innerText = detected.hr_value != null ? `${detected.hr_value} bpm` : "N/A";
-      confEl.innerText = detected.cnn_confidence != null ? detected.cnn_confidence.toFixed(3) : "N/A";
+      cnnEl.innerText = fmt(detected.cnn_label);
+      xgbEl.innerText = fmt(detected.xgb_pred);
+      hrEl.innerText = detected.hr_value ? `${detected.hr_value} bpm` : "N/A";
+      confEl.innerText = detected.cnn_confidence ? detected.cnn_confidence.toFixed(3) : "N/A";
       faceEl.innerText = detected.face_present ? "Yes" : "No";
       if (captured_frame) imgEl.src = captured_frame;
 
-      // Save to database via Eel
+      // 🔥 Load random recommendation
+      eel.get_recommendation_for_stress(detected.combined)((response) => {
+        console.log("[DEBUG Rec Response]", response);
+        recEl.innerText = response.recommendations?.[0] || "No recommendation";
+      });
+
+      // Save button
       saveBtn.addEventListener("click", async () => {
         const username = localStorage.getItem("username") || "Guest";
-        try {
-          const payload = { username, timestamp: new Date().toISOString(), ...detected };
-          const res = await eel.save_detection_result(payload)();
-          alert(res);
-        } catch (e) {
-          console.error(e);
-          alert("❌ Failed to save result.");
-        }
+        const payload = { username, timestamp: new Date().toISOString(), ...detected };
+        const res = await eel.save_detection_result(payload)();
+        alert(res);
       });
+
     });
   </script>
+
 </body>
 </html>

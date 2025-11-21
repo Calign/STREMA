@@ -24,22 +24,49 @@ async function login() {
     }
 }
 
-async function logoutUser() {
-    const confirmLogout = confirm("Are you sure you want to log out?");
-    if (!confirmLogout) return;
+// --------------------
+// Logout System (Custom Modal)
+// --------------------
+
+function logoutUser() {
+    // Show the modal instead of using confirm()
+    const modal = document.getElementById("logoutModal");
+    modal.classList.add("show");
+}
+
+function closeLogoutModal() {
+    const modal = document.getElementById("logoutModal");
+    modal.classList.remove("show");
+}
+
+async function confirmLogout() {
+    // Proceed with actual logout
     localStorage.clear();
     sessionStorage.clear();
-    try { await eel.logout()(); } catch(e){console.warn("Logout failed:",e);}
+
+    try { 
+        await eel.logout()(); 
+    } catch(e) {
+        console.warn("Logout failed:", e);
+    }
+
     window.location.href = "login.html";
 }
+
 
 function navigateWithSlide(targetPage, direction) {
     document.body.classList.add(direction === "left" ? "slide-out-left" : "slide-out-right");
     setTimeout(() => window.location.href = targetPage, 400);
 }
 
-
-
+// -------- Display Username on Pages ---------- //
+document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById("displayUsername");
+    if (el) {
+        const username = localStorage.getItem("username") || "User";
+        el.textContent = username;
+    }
+});
 
 
 
@@ -66,6 +93,7 @@ if (window.location.pathname.includes("home.html")) {
             const chartEl = document.getElementById("homeStressChart");
             if (chartEl) {
                 const username = localStorage.getItem("username") || "Guest";
+                
 
                 try {
                     const history = await eel.get_full_detection_history(username)() || [];
@@ -187,6 +215,9 @@ if (window.location.pathname.includes("detection.html")) {
         return `${m}:${s}`;
     }
 
+    let lastHRValue = null;
+
+    // Animate last HR values from CSV at start (optional)
     function animateHeartRates(hrArray, intervalMs = 1500) {
         if (!hrArray || hrArray.length === 0) return;
         let index = 0;
@@ -194,7 +225,8 @@ if (window.location.pathname.includes("detection.html")) {
         function next() {
             if (index >= hrArray.length) return;
             if (!currentHR.dataset.locked) {
-                currentHR.innerText = hrArray[index];
+                lastHRValue = Number(hrArray[index]); // update lastHRValue
+                currentHR.innerText = lastHRValue;
                 currentHR.classList.add("latest");
                 currentHR.dataset.locked = "true";
 
@@ -209,43 +241,53 @@ if (window.location.pathname.includes("detection.html")) {
         next();
     }
 
+    // Poll the latest HR from Python continuously
     async function pollLatestHR() {
         try {
             const hrVal = await eel.get_latest_heart_rate_value()();
             if (hrVal !== undefined && hrVal !== null) {
-                hrSeries.push(Number(hrVal));
+                lastHRValue = Number(hrVal);
+                hrSeries.push(lastHRValue);
                 if (!currentHR.dataset.locked) {
-                    currentHR.innerText = hrVal;
+                    currentHR.innerText = lastHRValue;
                     currentHR.classList.add("latest");
                     setTimeout(() => currentHR.classList.remove("latest"), 1200);
                 }
             } else {
-                currentHR.innerText = "--";
+                // only show -- if we never had a valid value
+                if (lastHRValue === null) currentHR.innerText = "--";
             }
         } catch (e) {
             console.error("HR polling failed:", e);
+            // keep lastHRValue if we had a previous reading
+            if (lastHRValue !== null) currentHR.innerText = lastHRValue;
+            else currentHR.innerText = "--";
         }
     }
+
+
 
     function resizeOverlay() {
         overlay.width = videoEl.videoWidth;
         overlay.height = videoEl.videoHeight;
     }
 
-    function drawFeatures(features = [], hr = null) {
+    function drawFeatures(featurePoints = [], hr = null) {
         overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-        features.forEach(f => {
-            overlayCtx.strokeStyle = "rgba(0, 255, 255, 0.8)";
-            overlayCtx.lineWidth = 2;
-            overlayCtx.strokeRect(f.x, f.y, f.width, f.height);
+
+        if (!featurePoints || featurePoints.length === 0) return;
+
+        featurePoints.forEach(pt => {
+            overlayCtx.beginPath();
+            overlayCtx.arc(pt.x, pt.y, 4, 0, 2 * Math.PI);
             overlayCtx.fillStyle = "lime";
-            f.keypoints.forEach(kp => {
-                overlayCtx.beginPath();
-                overlayCtx.arc(kp.x, kp.y, 3, 0, 2 * Math.PI);
-                overlayCtx.fill();
-            });
+            overlayCtx.fill();
+            overlayCtx.strokeStyle = "cyan";
+            overlayCtx.lineWidth = 1;
+            overlayCtx.stroke();
         });
     }
+
 
     async function onDetectionComplete(frames) {
         running = false;
@@ -254,6 +296,11 @@ if (window.location.pathname.includes("detection.html")) {
         stopWebcam();
 
         if (animationId) cancelAnimationFrame(animationId);
+
+        // Show loading overlay
+        const overlayEl = document.getElementById("loadingOverlay");
+        overlayEl.style.display = "flex";
+        overlayEl.classList.add("show");
 
         const mode = modeSelect.value;
         const username = localStorage.getItem("username") || "Guest";
@@ -288,8 +335,14 @@ if (window.location.pathname.includes("detection.html")) {
             catch (e) { console.error("Save failed:", e); }
         }
 
+        // Wait a tiny bit so spinner is visible even if processing is super fast
+        await new Promise(res => setTimeout(res, 200));
+
+        // Hide overlay (optional) and redirect
+        // overlayEl.style.display = "none";
         window.location.href = "result.html";
     }
+
 
     async function startDetection() {
         try {
@@ -322,14 +375,14 @@ if (window.location.pathname.includes("detection.html")) {
                 try {
                     const frameData = captureFrameDataUrl();
                     if (frameData) {
-                        // Optional: comment out Python call if slow
-                        // const features = await eel.get_current_face_features(frameData)();
-                        const features = [];
+                        // Fetch all 26 feature points from Python
+                        const features = await eel.get_current_face_feature_points(frameData)();
                         drawFeatures(features);
                     }
                 } catch (e) { console.warn("Feature loop failed:", e); }
                 animationId = requestAnimationFrame(renderLoop);
             });
+
 
             // Sync HR
             try { await eel.sync_heart_rate()(); } catch (e) { console.warn("Auto-sync failed:", e); }
@@ -426,6 +479,15 @@ if(window.location.pathname.includes("result.html")){
         faceEl.innerText = detected.face_present ? "Yes" : "No";
         if(captured_frame && imgEl) imgEl.src = captured_frame;
 
+            // === Stress Bar Indicator ===
+        const indicator = document.getElementById("stress-indicator");
+        if (indicator && detected.combined != null) {
+            const score = Math.min(Math.max(Number(detected.combined), 1), 10); // clamp 1-10
+            const position = ((score - 1) / 9) * 100; // map 1→0%, 10→100%
+            indicator.style.left = `calc(${position}% - 10px)`; // offset for centering
+    }
+
+
         // Set stress scale description dynamically
         if(detected.combined != null){
             const combinedScore = Number(detected.combined);
@@ -443,23 +505,102 @@ if(window.location.pathname.includes("result.html")){
         }
 
         // Load Recommendations
-        if(detected && detected.combined != null){
-            eel.get_recommendation_for_stress(detected.combined)().then(res => {
-                const recs = res.recommendations || [];
-                recEl.innerHTML = recs.length > 0
-                    ? `<ul>${recs.map(r => `<li>${r}</li>`).join("")}</ul>`
-                    : "<p>No recommendations available.</p>";
-            }).catch(() => {
-                recEl.innerHTML = "<p>No recommendations available.</p>";
-            });
+        if (detected && detected.combined != null) {
+            eel.get_recommendation_for_stress(detected.combined)()
+                .then(res => {
+                    console.log("DEBUG: Recommendation received from Python:", res);
+                    const recs = res.recommendations || [];
+                    recEl.innerHTML = recs.length > 0
+                        ? `<ul>${recs.map(r => `<li>${r}</li>`).join("")}</ul>`
+                        : "<p>No recommendations available.</p>";
+                })
+                .catch(err => {
+                    console.error("Failed to fetch recommendation:", err);
+                    recEl.innerHTML = "<p>No recommendations available.</p>";
+                });
         } else {
             recEl.innerHTML = "<p>No recommendations available.</p>";
         }
+
     } else {
         stressEl.innerText = "No detection data found.";
         scaleInfoEl.innerText = "";
         recEl.innerHTML = "<p>No recommendations available.</p>";
     }
+
+
+    // Fetch last scaled facial features from backend
+    eel.get_last_scaled_facial_features()().then(featureArrays => {
+        if (!featureArrays || featureArrays.length === 0) return;
+
+        // featureArrays is list of arrays per frame
+        const labels = [
+            "SAu01_InnerBrowRaiser",   // left eyebrow height
+            "SAu02_OuterBrowRaiser",   // right eyebrow height
+            "SAu04_BrowLowerer",       // left eyebrow length / brow distance
+            "SAu05_UpperLidRaiser",    // upper lip height
+            "SAu06_CheekRaiser",       // left eye height
+            "SAu07_LidTightener",      // face width ratio
+            "SAu09_NoseWrinkler",      // nose wrinkle
+            "SAu10_UpperLipRaiser",    // other feature / lip raiser
+            "SAu12_LipCornerPuller",   // left mouth upper dist
+            "SAu14_Dimpler",            // right mouth upper dist
+            "SAu15_LipCornerDepressor", // left eyebrow dist
+            "SAu17_ChinRaiser",         // chin-nose distance
+            "SAu20_LipStretcher",       // left mouth - right mouth dist
+            "SAu23_LipTightener",       // right eyebrow dist
+            "SAu24_LipPressor",         // left mouth - lower lip
+            "SAu25_LipsPart",           // upper lip - lower lip
+            "SAu26_JawDrop",            // right mouth - lower lip
+            "SAu27_MouthStretch",       // upper lip - lower lip (duplicate)
+            "SAu43_EyesClosed",         // left eye open fraction
+            "SmouthOpen",               // right eye open fraction
+            "SleftEyeClosed",           // left eye width
+            "SrightEyeClosed",          // right eye width
+            "SleftEyebrowLowered",      // left eyebrow to eye gap
+            "SleftEyebrowRaised",       // left eye to eyebrow gap
+            "SrightEyebrowLowered",     // right eyebrow to eye gap
+            "SrightEyebrowRaised"       // right eye to eyebrow gap
+        ];
+
+
+        // Average features across frames
+        const avgFeatures = labels.map((_, i) => {
+            let sum = 0;
+            featureArrays.forEach(f => { sum += f[i]; });
+            return sum / featureArrays.length;
+        });
+
+        const ctx = document.getElementById("featureGraph").getContext("2d");
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Feature Intensity',
+                    data: avgFeatures,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Facial Feature Intensities (averaged per frame)'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    });
+
 }
 
 
@@ -614,6 +755,126 @@ if (window.location.pathname.includes("history.html")) {
 
 
 
+
+// --------------------
+// Breathing Exercise (Guided with Hold Phases)
+// --------------------
+const startBreathingBtn = document.getElementById("startBreathingBtn");
+const stopBreathingBtn = document.getElementById("stopBreathingBtn");
+const breathingContainer = document.getElementById("breathingContainer");
+const breathingCircle = document.getElementById("breathingCircle");
+const breathingText = document.getElementById("breathingText");
+const timerDisplay = document.getElementById("timerDisplay");
+
+let breathingInterval;
+let totalTime = 60; // total exercise time in seconds
+let breathingPhases = [
+    { text: "Breathe in", note: "Please breathe in through your nose", duration: 4 },
+    { text: "Hold", note: "Hold your breath gently", duration: 4 },
+    { text: "Breathe out", note: "Please breathe out through your mouth", duration: 4 },
+    { text: "Hold", note: "Relax", duration: 4 }
+];
+
+startBreathingBtn.addEventListener("click", () => {
+    breathingContainer.classList.remove("hidden");
+    let phaseIndex = 0;
+    let phaseTime = breathingPhases[phaseIndex].duration;
+    let remainingTime = totalTime;
+
+    updateBreathingText();
+
+    breathingInterval = setInterval(() => {
+        remainingTime--;
+        phaseTime--;
+        timerDisplay.textContent = formatTime(remainingTime);
+
+        if (phaseTime <= 0) {
+            phaseIndex = (phaseIndex + 1) % breathingPhases.length;
+            phaseTime = breathingPhases[phaseIndex].duration;
+            updateBreathingText();
+        }
+
+        if (remainingTime <= 0) {
+            clearInterval(breathingInterval);
+            breathingText.textContent = "Well done!";
+            breathingCircle.style.transform = "scale(1)";
+        }
+    }, 1000);
+
+    function updateBreathingText() {
+        const phase = breathingPhases[phaseIndex];
+        breathingText.textContent = `${phase.text}\n${phase.note}`;
+        // Circle animation
+        switch (phase.text) {
+            case "Breathe in":
+                breathingCircle.style.transform = "scale(1)";
+                break;
+            case "Breathe out":
+                breathingCircle.style.transform = "scale(0.6)";
+                break;
+            default:
+                breathingCircle.style.transform = "scale(0.8)"; // hold
+        }
+    }
+});
+
+stopBreathingBtn.addEventListener("click", () => {
+    clearInterval(breathingInterval);
+    breathingContainer.classList.add("hidden");
+});
+
+
+
+
+
+// --------------------
+// Power Nap Timer
+// --------------------
+const napButtons = document.querySelectorAll(".nap-btn");
+const napTimerContainer = document.getElementById("napTimerContainer");
+const napTimeDisplay = document.getElementById("napTimeDisplay");
+const stopNapBtn = document.getElementById("stopNapBtn");
+
+let napInterval;
+let napTimeSeconds = 0;
+
+napButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        clearInterval(napInterval);
+        const minutes = parseInt(btn.dataset.minutes);
+        napTimeSeconds = minutes * 60;
+        napTimeDisplay.textContent = formatTime(napTimeSeconds);
+        napTimerContainer.classList.remove("hidden");
+
+        napInterval = setInterval(() => {
+            napTimeSeconds--;
+            napTimeDisplay.textContent = formatTime(napTimeSeconds);
+
+            if (napTimeSeconds <= 0) {
+                clearInterval(napInterval);
+                napTimeDisplay.textContent = "Time's up!";
+            }
+        }, 1000);
+    });
+});
+
+stopNapBtn.addEventListener("click", () => {
+    clearInterval(napInterval);
+    napTimerContainer.classList.add("hidden");
+});
+
+// --------------------
+// Helper function: Format seconds into MM:SS
+// --------------------
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+}
+
+
+
+
 // ===================== Music Section =====================
 if (window.location.pathname.includes("recommendation.html")) {
     const youtubeInput = document.getElementById("youtubeLinkInput");
@@ -629,12 +890,22 @@ if (window.location.pathname.includes("recommendation.html")) {
     let currentUser = localStorage.getItem("username") || "Guest";
     let currentPlaylistTracks = [];
 
-// -------------------- Helpers --------------------
-function extractYouTubeID(url) {
-    const regex = /(?:youtube\.com\/.*v=|youtu\.be\/)([^&\n?#]+)/;
-    const match = url.match(regex);
-    return match ? match[1] : null;
-}
+    // -------------------- Notification System --------------------
+    function showNotification(message, type = "success") {
+        const box = document.getElementById("notificationBox");
+        box.textContent = message;
+        box.className = "notification show " + type;
+        setTimeout(() => {
+            box.className = "notification hidden";
+        }, 2500);
+    }
+
+    // -------------------- Helpers --------------------
+    function extractYouTubeID(url) {
+        const regex = /(?:youtube\.com\/.*v=|youtu\.be\/)([^&\n?#]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
 
     // -------------------- Load User Music --------------------
     async function loadMusic() {
@@ -646,7 +917,7 @@ function extractYouTubeID(url) {
                     const div = document.createElement("div");
                     div.className = "uploaded-track";
                     div.innerHTML = `
-                        <span>${track.url}</span>
+                        <span>${track}</span>
                         <button class="playBtn">▶️ Play</button>
                         <button class="addToPlaylistBtn">➕</button>
                         <button class="deleteBtn">🗑️</button>
@@ -654,34 +925,37 @@ function extractYouTubeID(url) {
 
                     // Play track
                     div.querySelector(".playBtn").onclick = () => {
-                        const videoID = extractYouTubeID(track.url);
-                        if (!videoID) return alert("Invalid YouTube URL.");
+                        const videoID = extractYouTubeID(track);
+                        if (!videoID) return showNotification("Invalid YouTube URL", "error");
+
                         playerContainer.innerHTML = `
-                            <iframe width="100%" height="250" 
-                                src="https://www.youtube.com/embed/${videoID}?autoplay=1" 
-                                title="YouTube video player" frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            <iframe width="100%" height="250"
+                                src="https://www.youtube.com/embed/${videoID}?autoplay=1"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowfullscreen>
                             </iframe>
                         `;
                     };
 
-                    // Delete track
-                    div.querySelector(".deleteBtn").onclick = async () => {
-                        const delRes = await eel.delete_youtube_track(currentUser, track.url)();
-                        if (delRes.status === "success") {
-                            div.remove();
-                            currentPlaylistTracks = currentPlaylistTracks.filter(t => t !== track.url);
-                        } else alert(delRes.message);
+                    // Add track to playlist
+                    div.querySelector(".addToPlaylistBtn").onclick = () => {
+                        if (!currentPlaylistTracks.includes(track)) {
+                            currentPlaylistTracks.push(track);
+                            showNotification(`Added to selection (${currentPlaylistTracks.length})`, "success");
+                        } else {
+                            showNotification("Track already added", "error");
+                        }
                     };
 
-                    // Add track to playlist selection
-                    div.querySelector(".addToPlaylistBtn").onclick = () => {
-                        if (!currentPlaylistTracks.includes(track.url)) {
-                            currentPlaylistTracks.push(track.url);
-                            alert(`Added to playlist selection! (${currentPlaylistTracks.length} tracks)`);
+                    // Delete track
+                    div.querySelector(".deleteBtn").onclick = async () => {
+                        const delRes = await eel.delete_youtube_track(currentUser, track)();
+                        if (delRes.status === "success") {
+                            div.remove();
+                            currentPlaylistTracks = currentPlaylistTracks.filter(t => t !== track);
+                            showNotification("Track removed!", "success");
                         } else {
-                            alert("Track already in selection.");
+                            showNotification(delRes.message, "error");
                         }
                     };
 
@@ -715,36 +989,40 @@ function extractYouTubeID(url) {
                         </div>
                     `;
 
-                    // View playlist tracks
+                    // View playlist
                     div.querySelector(".viewBtn").onclick = () => {
-                        if (tracks.length === 0) {
-                            alert(`Playlist "${pl.playlist_name}" is empty.`);
-                        } else {
-                            alert(`Tracks in "${pl.playlist_name}":\n${tracks.join("\n")}`);
-                        }
+                        if (tracks.length === 0)
+                            showNotification(`Playlist "${pl.playlist_name}" is empty.`, "error");
+                        else
+                            showNotification(`Tracks:\n${tracks.join("\n")}`, "success");
                     };
 
-                    // Play entire playlist (first track auto)
+                    // Play playlist
                     div.querySelector(".playPlaylistBtn").onclick = () => {
-                        if (tracks.length === 0) return alert("Playlist is empty.");
+                        if (tracks.length === 0)
+                            return showNotification("Playlist is empty.", "error");
+
                         const firstID = extractYouTubeID(tracks[0]);
-                        if (!firstID) return alert("Invalid YouTube URL.");
+                        if (!firstID)
+                            return showNotification("Invalid URL", "error");
+
                         playerContainer.innerHTML = `
-                            <iframe width="100%" height="250" 
-                                src="https://www.youtube.com/embed/${firstID}?autoplay=1" 
-                                title="YouTube video player" frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            <iframe width="100%" height="250"
+                                src="https://www.youtube.com/embed/${firstID}?autoplay=1"
                                 allowfullscreen>
                             </iframe>
                         `;
-                        alert("Playing first track of playlist. To play sequentially, additional JS logic can be added.");
                     };
 
                     // Delete playlist
                     div.querySelector(".deleteBtn").onclick = async () => {
                         const delRes = await eel.delete_playlist(currentUser, pl.playlist_name)();
-                        if (delRes.status === "success") div.remove();
-                        else alert(delRes.message);
+                        if (delRes.status === "success") {
+                            div.remove();
+                            showNotification("Playlist deleted", "success");
+                        } else {
+                            showNotification(delRes.message, "error");
+                        }
                     };
 
                     playlistContainer.appendChild(div);
@@ -760,18 +1038,19 @@ function extractYouTubeID(url) {
     // -------------------- Add YouTube Track --------------------
     addYoutubeBtn.onclick = async () => {
         const url = youtubeInput.value.trim();
-        if (!url) return alert("Please enter a YouTube URL!");
+        if (!url) return showNotification("Enter a YouTube URL", "error");
+
         const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
-        if (!ytRegex.test(url)) return alert("Invalid YouTube URL!");
+        if (!ytRegex.test(url)) return showNotification("Invalid YouTube URL", "error");
 
         try {
             const res = await eel.add_youtube_track(currentUser, url)();
             if (res.status === "success") {
-                trackStatus.textContent = "✅ Track added!";
+                showNotification("Track added!", "success");
                 youtubeInput.value = "";
                 loadMusic();
             } else {
-                trackStatus.textContent = "❌ " + res.message;
+                showNotification(res.message, "error");
             }
         } catch (err) {
             console.error("Error adding track:", err);
@@ -781,18 +1060,22 @@ function extractYouTubeID(url) {
     // -------------------- Create Playlist --------------------
     createPlaylistBtn.onclick = async () => {
         const name = playlistNameInput.value.trim();
-        if (!name) return alert("Enter a playlist name.");
-        if (!currentPlaylistTracks.length) return alert("Add at least one track to the playlist.");
+        if (!name) return showNotification("Enter playlist name", "error");
+
+        if (!currentPlaylistTracks.length)
+            return showNotification("Add at least one track", "error");
 
         try {
             const res = await eel.create_playlist(currentUser, name, currentPlaylistTracks)();
             if (res.status === "success") {
-                alert(`Playlist "${name}" created!`);
+                showNotification(`Playlist "${name}" created!`, "success");
                 playlistNameInput.value = "";
                 currentPlaylistTracks = [];
-                loadMusic();        // Refresh tracks
-                loadPlaylists();    // Refresh playlists
-            } else alert(res.message);
+                loadMusic();
+                loadPlaylists();
+            } else {
+                showNotification(res.message, "error");
+            }
         } catch (err) {
             console.error("Error creating playlist:", err);
         }
@@ -802,6 +1085,8 @@ function extractYouTubeID(url) {
     loadMusic();
     loadPlaylists();
 }
+
+
 
 
 // ===================== Exercise Videos Section =====================

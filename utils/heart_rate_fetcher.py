@@ -1,14 +1,17 @@
 # heart_rate_fetcher.py
 import os
+import csv
 import datetime
 import pandas as pd
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+
 SCOPES = ['https://www.googleapis.com/auth/fitness.heart_rate.read']
 CSV_FILE = 'heart_rate_data.csv'
 DAYS_BACK = 7
+HEART_RATE_CSV = "heart_rate_data.csv"
 
 def get_credentials():
     if os.path.exists('token.json'):
@@ -69,10 +72,24 @@ def save_to_csv(new_data):
     combined_df.to_csv(CSV_FILE, index=False)
     print(f"✅ Heart rate CSV updated with latest data.")
 
+LAST_HR_SYNC_OK = False
+
 def update_heart_rate_csv():
-    """Fetch latest heart rate from Google Fit and update CSV."""
-    new_data = fetch_heart_rate_data()
-    save_to_csv(new_data)
+    global LAST_HR_SYNC_OK
+    try:
+        new_data = fetch_heart_rate_data()
+        if not new_data:
+            LAST_HR_SYNC_OK = False
+            return False
+        ...
+        LAST_HR_SYNC_OK = True
+        return True
+    except Exception:
+        LAST_HR_SYNC_OK = False
+        print("[update_heart_rate_csv] Skipped: No connection or API error.")
+        return False
+
+
 
 def get_latest_hr_value_from_csv(csv_file=CSV_FILE):
     """Return most recent HR from CSV"""

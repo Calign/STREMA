@@ -135,3 +135,13 @@
     20% { transform: scale(1.15); }
     40% { transform: scale(0.9); }
 }
+
+#loadingOverlay {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+#loadingOverlay.show {
+    opacity: 1;
+    display: flex !important;
+}
+
