@@ -71,7 +71,7 @@ body {
 /* Hero Section */
 .hero {
   text-align: center;
-  padding: 100px 20px; /* more breathing room */
+  padding: 40px 20px; /* more breathing room */
   background: linear-gradient(135deg, #32C1CC, #196066);
   color: white;
   border-radius: 0 0 10px 10px;

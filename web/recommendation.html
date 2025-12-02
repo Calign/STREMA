@@ -101,6 +101,84 @@
 
     <script src="script.js"></script>
 
-    
+    <!-- Real-time Stress Display -->
+    <div id="realtime-stress-box">
+        <p id="realtime-stress-text">Detecting stress...</p>
+    </div>
+
+    <script>
+    let detectionInterval = null;
+
+    // Convert a video frame to dataURL (same as detection.html)
+    async function captureFrame() {
+        return new Promise(async (resolve) => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement("video");
+                video.srcObject = stream;
+                await video.play();
+
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0);
+
+                // Stop camera right after capturing
+                stream.getTracks().forEach(t => t.stop());
+
+                resolve(canvas.toDataURL("image/png"));
+            } catch (err) {
+                console.error("Frame capture error:", err);
+                resolve(null);
+            }
+        });
+    }
+
+    async function runRealtimeStressDetection() {
+        const frame = await captureFrame();
+        if (!frame) {
+            document.getElementById("realtime-stress-text").innerText = "No face detected";
+            return;
+        }
+
+        eel.run_detection([frame], "both")(result => {
+            if (!result) return;
+
+            let level = "Unknown";
+
+            if (result.combined !== undefined && result.combined !== null) {
+                level = result.combined.toFixed(2);
+            } else if (result.cnn_label !== null) {
+                level = result.cnn_label;
+            }
+
+            document.getElementById("realtime-stress-text").innerText =
+                "Real-time Stress: " + level;
+        });
+    }
+
+    function startRealtimeStress() {
+        if (!detectionInterval) {
+            runRealtimeStressDetection(); // run immediately
+            detectionInterval = setInterval(runRealtimeStressDetection, 10000); // every 10 seconds
+        }
+    }
+
+    function stopRealtimeStress() {
+        if (detectionInterval) {
+            clearInterval(detectionInterval);
+            detectionInterval = null;
+        }
+    }
+
+    // Start when entering recommendation.html
+    window.addEventListener("load", startRealtimeStress);
+
+    // Stop when leaving
+    window.addEventListener("beforeunload", stopRealtimeStress);
+    </script>
+
 </body>
 </html>

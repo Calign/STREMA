@@ -30,6 +30,7 @@ def fetch_heart_rate_data():
     end_time = int(datetime.datetime.now().timestamp() * 1e9)
     start_time = int((datetime.datetime.now() - datetime.timedelta(days=DAYS_BACK)).timestamp() * 1e9)
     dataset = f"{start_time}-{end_time}"
+    print(f"[fetch_heart_rate_data] Dataset range: {start_time}-{end_time}")
 
     data_sources = service.users().dataSources().list(userId='me').execute()
     heart_rate_source = None
@@ -39,8 +40,10 @@ def fetch_heart_rate_data():
             break
 
     if not heart_rate_source:
-        print("❌ No heart rate data source found.")
+        print("[fetch_heart_rate_data] ❌ No heart rate data source found.")
         return []
+
+    print(f"[fetch_heart_rate_data] Using data source: {heart_rate_source}")
 
     data = service.users().dataSources().datasets().get(
         userId='me',
@@ -55,7 +58,9 @@ def fetch_heart_rate_data():
         time_str = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         points.append({'timestamp': time_str, 'heart_rate': hr_value})
 
+    print(f"[fetch_heart_rate_data] Fetched {len(points)} points")
     return points
+
 
 def save_to_csv(new_data):
     if not new_data:
@@ -81,7 +86,10 @@ def update_heart_rate_csv():
         if not new_data:
             LAST_HR_SYNC_OK = False
             return False
-        ...
+
+        # FIX: Save data to CSV
+        save_to_csv(new_data)
+
         LAST_HR_SYNC_OK = True
         return True
     except Exception:

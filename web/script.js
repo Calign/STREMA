@@ -9,8 +9,16 @@ async function signup() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     const result = await eel.signup(username, password)();
-    document.getElementById("result").innerText = result;
+    document.getElementById("result").innerText = result.msg;
+
+    // If signup was successful, redirect to login page after 2 seconds
+    if (result.status === "success") {
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 2000); // 2000 ms = 2 seconds
+    }
 }
+
 
 async function login() {
     const username = document.getElementById("username").value;
@@ -23,6 +31,26 @@ async function login() {
         setTimeout(() => window.location.href = "home.html", 800);
     }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+
+    [usernameInput, passwordInput].forEach(input => {
+        input.addEventListener("keydown", function(event) { // <-- changed here
+            if (event.key === "Enter") {
+                event.preventDefault();
+                
+                if (document.title.includes("Login")) {
+                    login();
+                } else if (document.title.includes("Sign Up")) {
+                    signup();
+                }
+            }
+        });
+    });
+});
+
 
 // --------------------
 // Logout System (Custom Modal)
@@ -68,6 +96,112 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// --------------------
+// Settings
+// --------------------
+// Open About Modal
+function openAboutModal() {
+    document.getElementById("aboutModal").classList.add("show");
+}
+
+// Close About Modal
+function closeAboutModal() {
+    document.getElementById("aboutModal").classList.remove("show");
+}
+
+// Optional: close modal when clicking outside
+window.addEventListener("click", (e) => {
+    const aboutModal = document.getElementById("aboutModal");
+    if (e.target === aboutModal) {
+        closeAboutModal();
+    }
+});
+
+
+function openGoogleFitModal() {
+    document.getElementById("googleFitModal").classList.add("show");
+}
+
+function closeGoogleFitModal() {
+    document.getElementById("googleFitModal").classList.remove("show");
+}
+
+
+
+// =====================
+// Google Fit Credential Functions
+// =====================
+async function uploadCredential() {
+    const fileInput = document.getElementById("credentialFile");
+    const msgEl = document.getElementById("googleFitMsg");
+    const authLink = document.getElementById("authLink");
+
+    // Clear previous messages
+    msgEl.innerText = "";
+    authLink.style.display = "none";
+
+    if (fileInput.files.length === 0) {
+        msgEl.innerText = "❌ Please select a file.";
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    // Validate file name and type
+    if (file.name !== "credentials.json" || file.type !== "application/json") {
+        msgEl.innerText = "❌ Invalid file. Must be named 'credentials.json' and be a JSON file.";
+        return;
+    }
+
+    try {
+        // Read the file as an ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Convert Uint8Array to regular JS array so Python receives a list
+        const byteArray = Array.from(uint8Array);
+
+        // Call Python function to save the credentials
+        const result = await eel.save_google_fit_credential(byteArray)();
+
+        // Show the result message
+        msgEl.innerText = result.msg;
+
+        if (result.status === "success" && result.auth_url) {
+            // Show authorization link if provided
+            authLink.href = result.auth_url;
+            authLink.style.display = "inline";
+        }
+    } catch (err) {
+        msgEl.innerText = `❌ Upload failed: ${err.message || err}`;
+        console.error("[Google Fit upload error]", err);
+    }
+}
+
+
+
+
+async function deleteCredentials() {
+    const msgEl = document.getElementById("googleFitMsg");
+    try {
+        const result = await eel.delete_google_fit_credentials()();
+        msgEl.innerText = result.msg;
+
+        // Hide the authorization link
+        document.getElementById("authLink").style.display = "none";
+    } catch (err) {
+        msgEl.innerText = "❌ Delete failed.";
+        console.error(err);
+    }
+}
+
+
+
+
+
+
+
+
 
 
 if (window.location.pathname.includes("home.html")) {
@@ -86,7 +220,7 @@ if (window.location.pathname.includes("home.html")) {
                 if (lastStress >= 1 && lastStress <= 4) spriteImg.src = "assets/sprite/sprite1.png";
                 else if (lastStress >= 5 && lastStress <= 7) spriteImg.src = "assets/sprite/sprite2.png";
                 else if (lastStress >= 8 && lastStress <= 10) spriteImg.src = "assets/sprite/sprite3.png";
-                else spriteImg.src = "";
+                else spriteImg.src = "assets/sprite/sprite1.png";
             }
 
             // Load last 5 sessions for chart
@@ -343,6 +477,17 @@ if (window.location.pathname.includes("detection.html")) {
         window.location.href = "result.html";
     }
 
+    // Poll HR every 5 seconds even outside detection
+    setInterval(async () => {
+        try {
+            const hrVal = await eel.get_latest_heart_rate_value()();
+            if (hrVal != null) currentHR.innerText = Number(hrVal);
+        } catch(e) {
+            console.warn("HR polling outside detection failed:", e);
+        }
+    }, 5000);
+
+
 
     async function startDetection() {
         try {
@@ -489,13 +634,13 @@ if(window.location.pathname.includes("result.html")){
 
 
         // Set stress scale description dynamically
-        if(detected.combined != null){
+        if (detected.combined != null) {
             const combinedScore = Number(detected.combined);
-            if(combinedScore >= 1 && combinedScore <= 4){
-                scaleInfoEl.innerText = "Little Stress.";
-            } else if(combinedScore >= 5 && combinedScore <= 7){
+            if (combinedScore >= 1 && combinedScore < 5) {  // Lower bound 1, upper bound exclusive of 5
+                scaleInfoEl.innerText = "Low Stress.";
+            } else if (combinedScore >= 5 && combinedScore < 7) {  // Lower bound 5, upper bound exclusive of 8
                 scaleInfoEl.innerText = "Medium Stress.";
-            } else if(combinedScore >= 8){
+            } else if (combinedScore >= 7) {
                 scaleInfoEl.innerText = "High Stress.";
             } else {
                 scaleInfoEl.innerText = "Stress level unavailable.";
@@ -503,6 +648,7 @@ if(window.location.pathname.includes("result.html")){
         } else {
             scaleInfoEl.innerText = "Stress level unavailable.";
         }
+
 
         // Load Recommendations
         if (detected && detected.combined != null) {

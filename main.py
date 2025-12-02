@@ -21,6 +21,8 @@ import json
 import datetime
 import re
 import csv
+from urllib.parse import urlencode
+
 
 # ---------- imports from your utils ----------
 # ensure your utils package is in PYTHONPATH or same folder
@@ -470,19 +472,22 @@ def predict_xgb_from_csv_last_n(csv_file=HEART_RATE_CSV, n=10):
 @eel.expose
 def signup(username, password):
     if not username or not password:
-        return "❌ Please enter a username and password."
+        return {"status": "error", "msg": "❌ Please enter a username and password."}
     try:
         with sqlite3.connect(DB_FILE) as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO users (username,password) VALUES (?,?)",
-                           (username, hash_password(password)))
+            cursor.execute(
+                "INSERT INTO users (username,password) VALUES (?,?)",
+                (username, hash_password(password))
+            )
             conn.commit()
-        return "✅ Signup successful. Please login."
+        return {"status": "success", "msg": "✅ Signup successful. Redirecting to login..."}
     except sqlite3.IntegrityError:
-        return "⚠️ Username already exists."
+        return {"status": "error", "msg": "⚠️ Username already exists."}
     except Exception as e:
         print("[signup error]", e)
-        return "❌ Signup failed."
+        return {"status": "error", "msg": "❌ Signup failed."}
+
 
 @eel.expose
 def login(username, password):
@@ -506,14 +511,41 @@ def logout():
 
 @eel.expose
 def sync_heart_rate():
+    """
+    Sync heart rate from Google Fit and update CSV.
+    Returns a user-friendly message and prints debug info.
+    """
     try:
+        print("[sync_heart_rate] Called")
         ok = update_heart_rate_csv()
         if ok:
+            print("[sync_heart_rate] ✅ Heart rate successfully synced.")
             return "✅ Heart rate synced."
         else:
+            print("[sync_heart_rate] ⚠️ No new data, using last saved heart rate.")
             return "⚠️ Offline: using last saved heart rate."
-    except Exception:
+    except Exception as e:
+        print("[sync_heart_rate] ⚠️ Exception during sync:", e)
         return "⚠️ Could not sync HR (offline)."
+
+    
+
+
+
+def start_hr_background_sync(interval_sec=300):
+    """Continuously sync heart rate every interval_sec seconds"""
+    import threading, time
+    def loop():
+        while True:
+            try:
+                update_heart_rate_csv()
+            except Exception as e:
+                print("[Background HR Sync] failed:", e)
+            time.sleep(interval_sec)
+    threading.Thread(target=loop, daemon=True).start()
+
+# Start background sync when app launches
+start_hr_background_sync()
 
 
 @eel.expose
@@ -732,6 +764,68 @@ def get_last_n_heart_rates(n=10):
         return []
 
     return hr_values[-n:]
+
+
+
+
+
+
+@eel.expose
+def save_google_fit_credential(file_bytes):
+    try:
+        # Save credentials.json to main repository
+        with open("credentials.json", "wb") as f:
+            f.write(bytearray(file_bytes))
+
+        # Load client_id from the uploaded credentials.json
+        with open("credentials.json", "r") as f:
+            creds = json.load(f)
+            client_id = creds.get("installed", {}).get("client_id") or creds.get("web", {}).get("client_id")
+            redirect_uris = creds.get("installed", {}).get("redirect_uris") or creds.get("web", {}).get("redirect_uris")
+            if not client_id or not redirect_uris:
+                return {"status": "error", "msg": "❌ Invalid credentials.json: missing client_id or redirect_uris."}
+
+            # Take the first redirect URI
+            redirect_uri = redirect_uris[0]
+
+        # Build OAuth2 authorization URL
+        auth_params = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "https://www.googleapis.com/auth/fitness.activity.read",
+            "access_type": "offline",
+            "prompt": "consent"
+        }
+
+        auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(auth_params)
+
+        return {"status": "success", "msg": "✅ credentials.json uploaded successfully.", "auth_url": auth_url}
+
+    except Exception as e:
+        print("[Google Fit upload error]", e)
+        return {"status": "error", "msg": f"❌ Failed to save credentials: {e}"}
+
+
+@eel.expose
+def delete_google_fit_credentials():
+    removed_files = []
+    for filename in ["credentials.json", "token.json"]:
+        if os.path.exists(filename):
+            os.remove(filename)
+            removed_files.append(filename)
+
+    if removed_files:
+        return {"status": "success", "msg": f"✅ Deleted: {', '.join(removed_files)}"}
+    else:
+        return {"status": "info", "msg": "ℹ️ No credentials found to delete."}
+
+
+
+
+
+
+
 
 
 @eel.expose
@@ -996,14 +1090,15 @@ def map_numeric_to_category(level):
     """
     try:
         level = float(level)
-        if 1 <= level <= 4:
+        if 1 <= level < 5:  # Change the upper bound for "low" to be less than 5
             return "low"
-        elif 5 <= level <= 7:
+        elif 5 <= level < 8:  # Change the upper bound for "medium" to be less than 8
             return "medium"
         elif 8 <= level <= 10:
             return "high"
         else:
             return None
+
     except:
         return None
 
@@ -1052,14 +1147,6 @@ def get_recent_heart_rates():
         print("Error reading heart_rate_data.csv:", e)
         return []
     
-
-
-
-
-
-
-
-
 
 # ---------- YouTube music management ----------
 @eel.expose
@@ -1156,7 +1243,14 @@ def delete_playlist(username, playlist_name):
         return {"status": "error", "message": str(e)}
 
 
-    
+
+
+
+
+
+
+
+
 
 
 

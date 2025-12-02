@@ -1,165 +1,83 @@
-/* Hero section */
+/* ==================== Hero Section ==================== */
 .hero-settings {
-  text-align: left;
-  padding: 30px 40px;
-  background: linear-gradient(135deg, #32C1CC, #196066);
-  color: white;
-  border-radius: 0 0 10px 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    text-align: left;
+    padding: 30px 40px;
+    background: linear-gradient(135deg, #32C1CC, #196066);
+    color: white;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .hero-settings .hero-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
 }
 
-/* Settings section layout */
+/* ==================== Settings Section ==================== */
 .settings {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin: 30px 50px;
-  max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 30px 50px;
+    max-width: 600px;
 }
 
-/* Each item container */
 .contents {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background-color: #f9f9f9;
-  border-radius: 10px;
-  padding: 15px 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    padding: 15px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
 }
 
-/* Hover and focus effect */
 .contents:hover {
-  background-color: #e8f7f8;
-  transform: translateX(5px);
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    background-color: #e8f7f8;
+    transform: translateX(5px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 
-/* Active or clicked style (optional) */
 .contents:active {
-  background-color: #d3f0f2;
+    background-color: #d3f0f2;
 }
 
-/* Icons */
 .settings-icon {
-  width: 28px;
-  height: 28px;
+    width: 28px;
+    height: 28px;
 }
 
-/* Text */
 .contents p {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #333;
-  margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333;
+    margin: 0;
 }
 
-/* Make responsive for smaller screens */
+/* ==================== Responsive ==================== */
 @media (max-width: 768px) {
-  .hero-settings {
-    padding: 20px;
-    text-align: center;
-  }
+    .hero-settings {
+        padding: 20px;
+        text-align: center;
+    }
 
-  .settings {
-    margin: 20px;
-  }
+    .settings {
+        margin: 20px;
+    }
 
-  .contents {
-    padding: 12px 15px;
-  }
+    .contents {
+        padding: 12px 15px;
+    }
 
-  .contents p {
-    font-size: 1rem;
-  }
+    .contents p {
+        font-size: 1rem;
+    }
 }
 
-/* Logout Confirmation */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 25px 30px;
-  width: 320px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  font-family: "Barlow", sans-serif;
-  animation: fadeIn 0.3s ease;
-}
-
-.modal h3 {
-  margin-bottom: 10px;
-  color: #196066;
-  font-weight: 600;
-}
-
-.modal p {
-  font-size: 15px;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.modal-buttons {
-  display: flex;
-  justify-content: space-around;
-}
-
-.cancel-btn,
-.confirm-btn {
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.cancel-btn {
-  background-color: #ccc;
-  color: #333;
-}
-
-.confirm-btn {
-  background-color: #20C997;
-  color: white;
-  font-weight: 600;
-}
-
-.confirm-btn:hover {
-  background-color: #17a589;
-}
-
-.cancel-btn:hover {
-  background-color: #b3b3b3;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-
-/* Modal Overlay */
+/* ==================== Modal (Logout & About) ==================== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -173,58 +91,82 @@
     opacity: 0;
     pointer-events: none;
     transition: 0.2s ease;
+    z-index: 1000;
 }
 
-/* Show Modal */
 .modal-overlay.show {
     opacity: 1;
     pointer-events: auto;
 }
 
-/* Modal Box */
 .modal {
-    background: #ffffff;
+    background: #fff;
     padding: 25px 30px;
     border-radius: 16px;
-    width: 330px;
+    max-width: 400px;
+    width: 90%;
     text-align: center;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    font-family: "Barlow", sans-serif;
+    animation: fadeIn 0.3s ease;
 }
 
 .modal h3 {
-    margin: 0;
+    margin-bottom: 15px;
     font-size: 20px;
     font-weight: 600;
+    color: #196066;
 }
 
 .modal p {
-    margin: 10px 0 20px;
+    margin-bottom: 15px;
     font-size: 15px;
     color: #444;
+    line-height: 1.5;
 }
 
-/* Buttons */
 .modal-buttons {
     display: flex;
-    justify-content: space-between;
-    gap: 12px;
+    justify-content: center;
+    gap: 10px;
 }
 
-.cancel-btn, .confirm-btn {
+.confirm-btn, .cancel-btn {
     flex: 1;
-    padding: 10px;
+    padding: 10px 20px;
     border-radius: 8px;
     font-size: 14px;
     cursor: pointer;
     border: none;
     font-weight: 600;
-}
-
-.cancel-btn {
-    background: #e5e5e5;
+    transition: 0.2s;
 }
 
 .confirm-btn {
-    background: #f05454;
+    background-color: #4CAF50;
     color: white;
 }
+
+.confirm-btn:hover {
+    background-color: #45a049;
+}
+
+.cancel-btn {
+    background-color: #e5e5e5;
+    color: #333;
+}
+
+.cancel-btn:hover {
+    background-color: #ccc;
+}
+
+
+
+
+/* ==================== Animation ==================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+

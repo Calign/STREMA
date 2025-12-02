@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="styles/general.css">
     <link rel="icon" href="assets/logo.png" type="image/png">
     <script src="/eel.js"></script>
+    <script src="script.js"></script>
     
 </head>
 <body>
@@ -30,13 +31,44 @@
     </div>
 
     <div class="settings">
-        
+
+        <div class="contents" onclick="openGoogleFitModal()">
+            <img class="settings-icon" src="assets/user.png">
+            <p>Google Fit Credentials</p>
+        </div>
+
+
+        <div class="contents" onclick="openAboutModal()">
+            <img class="settings-icon" src="assets/about.png">
+            <p>About</p>
+        </div>
+
         <div class="contents" onclick="logoutUser()">
             <img class="settings-icon" src="assets/off.png">
             <p>Logout</p>
         </div>
+
     </div>
 
+
+    <!-- Google Fit Modal -->
+    <div id="googleFitModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Google Fit Credentials</h3>
+            <input type="file" id="credentialFile" accept=".json">
+            <div class="modal-buttons">
+                <button class="confirm-btn" onclick="uploadCredential()">Upload</button>
+                <button class="cancel-btn" onclick="deleteCredentials()">Delete</button>
+            </div>
+            <p id="googleFitMsg"></p>
+            <a id="authLink" href="#" target="_blank" style="display:none;">Authorize App</a>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeGoogleFitModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    
     <!-- Logout Confirmation -->
     <div id="logoutModal" class="modal-overlay">
         <div class="modal">
@@ -49,7 +81,31 @@
         </div>
     </div>
 
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal-overlay">
+        <div class="modal">
+            <h3>About STREMA</h3>
+            <p>
+                STREMA is a stress detection and management system that analyzes facial expressions and heart rate to provide personalized recommendations.
+            </p>
+            <p>
+                STREMA is developed by fourth year students of De La Salle University - Dasmariñas, Bachelor of Science in Computer Science with Intelligence Systems Track.
+            </p>
+            <p>
+                STREMA serves as encouragement to raise awareness about managing stress and serves as a reference for what the user feels. This software should not be taken as a dependable professional help and should be considered as motivation to seek professional help when users deem it necessary.
+            </p>
+            <p>
+                For further inquiries, please contact: <br>
+                Caling, Zandro Alvaro B. - czb0177@dlsud.edu.ph <br>
+                Alcedo, John Gabriel A. - aja2107@dlsud.edu.ph <br>
+                Hernaez, Patrick P.  - hpp0285@dlsud.edu.ph
+            </p>
+            <div class="modal-buttons">
+                <button class="confirm-btn" onclick="closeAboutModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="script.js"></script>
+
 </body>
 </html>
